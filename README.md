@@ -1,6 +1,6 @@
 # CUFAR
 
-The codes include the implementation of CUFAR (continual Urban Flow inference with Adaptive knowledge Replay) and other FUFI methods (UrbanFM, DeePLGR, FODE, UrbanODE, UrbanPy).
+The codes include the implementation of CUFAR (continual Urban Flow inference with Adaptive knowledge Replay) and other FUFI methods (UrbanFM, DeepLGR, FODE, UrbanODE, UrbanPy).
 
 ## Requirements
 We implement CUFAR and other FUFI methods with following dependencies:
