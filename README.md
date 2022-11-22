@@ -18,8 +18,7 @@ For Windows, follow the step in the [install_env.sh](install_env.sh).
 
 
 ## Datasets
-In our code & data file, we only upload a subset dataset (P1) due to the size limit of CMT, ohter three datasets (P2, P3, P4) can be obtained in baseline [UrbanFM's repo](https://github.com/yoshall/UrbanFM/tree/master/data). For $\textit{continual}$ protocol, we suggest you download the complete datasets to conduct experiments.
-
+TaxiBJ datasets can be obtained in baseline [UrbanFM's repo](https://github.com/yoshall/UrbanFM/tree/master/data).
 
 
 ## Usage
