@@ -1,6 +1,5 @@
 # CUFAR
-
-The codes include the implementation of CUFAR (continual Urban Flow inference with Adaptive knowledge Replay) and other FUFI methods (UrbanFM, DeepLGR, FODE, UrbanODE, UrbanPy).
+This repository provides a reference implementation of paper: Overcoming Forgetting in Fine-Grained Urban Flow Inference via Adaptive Knowledge Replay. The codes include the implementation of CUFAR and other FUFI methods (UrbanFM, DeepLGR, FODE, UrbanODE, UrbanPy).
 
 ## Requirements
 We implement CUFAR and other FUFI methods with following dependencies:
@@ -10,7 +9,7 @@ We implement CUFAR and other FUFI methods with following dependencies:
 * einops
 * sciki-learn
 
-For Linux, install the enviroments via Anaconda:
+For Linux, install the enviroment via Anaconda:
 ```shell
 bash install_env.sh
 ```
@@ -51,4 +50,15 @@ python train_finetune.py --model=CUFAR --initial_train
 
 # Run continual protocol to evaluate our AKR
 python train_continual.py --model=CUFAR --initial_train
+```
+
+## Citing
+If you find CUFAR useful in your research, please cite the following paper:
+```bibtex
+@inproceedings{yu2023Overcoming,
+  title={Overcoming Forgetting in Fine-Grained Urban Flow Inference via Adaptive Knowledge Replay},
+  author={Yu, Haoyang and Xu, Xovee and Zhong, Ting and Zhou, Fan},
+  booktitle={AAAI},
+  year={2023}
+} 
 ```
