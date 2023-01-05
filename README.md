@@ -9,7 +9,7 @@ We implement CUFAR and other FUFI methods with following dependencies:
 * pytorch 1.8.0
 * numpy
 * einops
-* sciki-learn
+* scikit-learn
 
 For Linux, install the enviroment via Anaconda:
 ```shell
