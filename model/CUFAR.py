@@ -3,7 +3,7 @@ import torch.nn as nn
 from einops import rearrange
 
 class mini_model(nn.Module):
-    def __init__(self, n_channel, scale_factor, in_channel, kernel_size, padding,  groups):
+    def __init__(self, n_channel, scale_factor, in_channel, kernel_size, padding, groups):
         super(mini_model, self).__init__()
         self.n_channels = n_channel
         self.scale_factor = scale_factor
@@ -42,7 +42,7 @@ class IC_layer(nn.Module):
 
 class CUFAR(nn.Module):
     def __init__(self, height=32, width=32, use_exf=True, scale_factor=4, 
-                    channels=128, sub_region = 4, scaler_X=1, scaler_Y=1):
+                    channels=128, sub_region = 4, scaler_X=1, scaler_Y=1, args= None):
         super(CUFAR, self).__init__()
         self.height = height
         self.width = width
@@ -53,14 +53,15 @@ class CUFAR(nn.Module):
         self.sub_region = sub_region
         self.scaler_X = scaler_X
         self.scaler_Y = scaler_Y
-
+        self.args = args
+        time_span = 24 if args.dataset == 'TaxiNYC' else 15
         if use_exf:
-            self.time_emb_region = nn.Embedding(15, int((self.width * self.height)/(self.sub_region ** 2)))
-            self.time_emb_global = nn.Embedding(15, (self.width * self.height))
+            self.time_emb_region = nn.Embedding(time_span, int((self.width * self.height)/(self.sub_region ** 2)))
+            self.time_emb_global = nn.Embedding(time_span, (self.width * self.height))
 
             # Monday: 1, Sunday:7, ignore 0, thus use 8
             self.embed_day = nn.Embedding(8, 2)
-            self.embed_hour = nn.Embedding(15, 3)  # hour range [0, 23]
+            self.embed_hour = nn.Embedding(24, 3)  # hour range [0, 23]
             self.embed_weather = nn.Embedding(18, 3)  # ignore 0, thus use 18
 
             self.ext2lr = nn.Sequential(
@@ -82,12 +83,12 @@ class CUFAR(nn.Module):
             self.local_sub_model = mini_model(self.n_channels * (sub_region ** 2), 
                                 self.scale_factor, 3 * (sub_region **2), 3, 1, sub_region **2)
         else:
-            self.global_model = mini_model(self.n_channels, self.scale_factor, 1 , 9, 1)
+            self.global_model = mini_model(self.n_channels, self.scale_factor, 1, 9, 4, 1)
             self.local_sub_model = mini_model(self.n_channels * (sub_region ** 2), 
-                                self.scale_factor, 1 * (sub_region **2), 3, sub_region **2)
+                                self.scale_factor, 1 * (sub_region **2), 3, 1, sub_region **2)
         self.relu = nn.ReLU()
         time_conv = []
-        for i in range(15):
+        for i in range(time_span):
             time_conv.append(nn.Conv2d(128*2, self.out_channel, 3, 1, 1))
         self.time_conv = nn.Sequential(*time_conv)
     
@@ -95,7 +96,7 @@ class CUFAR(nn.Module):
     def embed_ext(self, ext):
         ext_out1 = self.embed_day(ext[:, 4].long().view(-1, 1)).view(-1, 2)
         ext_out2 = self.embed_hour(
-            ext[:, 5].long().view(-1, 1) - 7).view(-1, 3)
+            ext[:, 5].long().view(-1, 1)).view(-1, 3)
         ext_out3 = self.embed_weather(
             ext[:, 6].long().view(-1, 1)).view(-1, 3)
         ext_out4 = ext[:, :4]
@@ -117,10 +118,14 @@ class CUFAR(nn.Module):
         if self.use_exf:
             x = rearrange(x, 'b c (ph h) (pw w) -> (ph pw) b c h w', ph= self.sub_region, pw= self.sub_region)
             ext_emb = self.embed_ext(eif)
-            time_emb_region = self.time_emb_region(eif[:, 5].long().view(-1, 1) - 7).view(
-                                    -1, 1, int(self.height/self.sub_region), int(self.width/self.sub_region))
-            time_emb_global = self.time_emb_global(eif[:, 5].long().view(-1, 1) - 7).view(
-                                            -1, 1, self.height, self.width)
+            t = eif[:, 5].long().view(-1, 1)
+            if self.args.dataset == 'TaxiBJ':
+                t -= 7
+            time_emb_region = self.time_emb_region(t).view(-1, 1, 
+                                                        int(self.height/self.sub_region), 
+                                                        int(self.width/self.sub_region))
+            time_emb_global = self.time_emb_global(t).view(-1, 1, 
+                                                        self.height, self.width)
             ext_out = self.ext2lr(ext_emb).view(-1, 1, int(self.width/self.sub_region), 
                                                     int(self.height/self.sub_region))
             ext_out_global = self.ext2lr_global(ext_emb).view(-1, 1, self.width, self.height)
@@ -144,7 +149,9 @@ class CUFAR(nn.Module):
 
         output= []
         for i in range(x.size(0)):
-            t = int(eif[i, 5].cpu().detach().numpy() -7)
+            t = int(eif[i, 5].cpu().detach().numpy())
+            if self.args.dataset == 'TaxiBJ':
+                t -= 7
             output.append(self.relu(self.time_conv[t](x[i].unsqueeze(0))))
         x = torch.cat(output, dim= 0)
         x = self.normalization(x, save_x * self.scaler_X / self.scaler_Y)

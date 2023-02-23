@@ -1,3 +1,6 @@
+import os
+device = '0'
+os.environ["CUDA_VISIBLE_DEVICES"] = device
 import time
 import torch
 from model.modules.AKR import continual
@@ -12,15 +15,11 @@ from model.CUFAR import CUFAR
 from model.DeepLGR import DeepLGR
 from src.urbanpy_train_continual import UrbanPy_continual_train
 import numpy as np
-import os
 
 args = get_args()
 if args.model == 'UrbanPy':
     UrbanPy_continual_train()
 else:
-    device = '0'
-    os.environ["CUDA_VISIBLE_DEVICES"] = device
-
     save_path = 'experiments/continual/{}-{}-{}-{}-{}'.format(
                                                     args.model,
                                                     args.dataset,
@@ -46,7 +45,7 @@ else:
             model = CUFAR(height=args.height, width=args.width, use_exf=args.use_exf,
                         scale_factor=args.scale_factor, channels=args.n_channels, 
                         sub_region= args.sub_region, 
-                        scaler_X=args.scaler_X, scaler_Y=args.scaler_Y)
+                        scaler_X=args.scaler_X, scaler_Y=args.scaler_Y, args= args)
         elif args.model == 'UrbanFM':
             model = UrbanFM(in_channels=1, out_channels=1, n_residual_blocks=16,
                         base_channels= args.n_channels, img_width= args.width, 
@@ -73,8 +72,7 @@ else:
         load_path = 'experiments/single-task/{}-{}-{}'.format(
                                                     args.model,
                                                     args.dataset,
-                                                    args.n_channels)
-        load_path = 'experiments/continual/CUFAR-TaxiBJ-128-1000-2-5/best_epoch_P1.pt'                       
+                                                    args.n_channels)                      
         print("load from {}".format(load_path))
         model_state_dict = torch.load(load_path)["model_state_dict"]
         model = choose_model()
@@ -198,17 +196,6 @@ else:
                     torch.save(state, '{}/best_epoch_{}.pt'.format(save_path, task))
 
                 total_mses[task].append(val_mse)
-
-                # log = ('Task:{}|Epoch:{}|Loss:{:.3f}|Val_MSE\t{:.3f}\t{:.3f}\t{:.3f}\t{:.3f}|Time_Cost:{:.2f}|Best_Epoch:{}|lr:{}'.format( 
-                #                 task, epoch, train_loss, 
-                #                 total_mses[train_sequence[0]][-1], total_mses[train_sequence[1]][-1], 
-                #                 total_mses[train_sequence[2]][-1], total_mses[train_sequence[3]][-1], 
-                #                 time.time() - epoch_start_time, best_epoch[task], 
-                #                 get_learning_rate(continual_model.optimizer)))
-                # print(log)
-                # f = open('{}/train_process.txt'.format(save_path), 'a')
-                # f.write(log+'\n')
-                # f.close()
 
         model = load_best_model(task)
         model.eval()

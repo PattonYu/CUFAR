@@ -30,10 +30,8 @@ class continual:
             for i in range(len(flows)):
                 expand_flows.append(torch.cat([flows[i], buffer_flows[i]], dim= 0))
             
-            expand_flows[-2], expand_flows[0], mask, aug = apply_augment(
-                                    fine= expand_flows[-2],
-                                    coarse= expand_flows[0], 
-                                    aug= self.args.augment, flag=False)
+            expand_flows[-2], expand_flows[0], mask, aug = apply_augment(fine= expand_flows[-2],
+                                                                        coarse= expand_flows[0])
 
             alpha = self.MMD.forward(expand_flows[0].view(expand_flows[0].size(0), -1).cpu(), 
                                         flows[0].view(flows[0].size(0), -1).cpu())

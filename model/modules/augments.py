@@ -7,8 +7,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-def apply_augment(fine, coarse, last_c=None, last_f=None, flag=False):    
-    aug_methods = ["blend", "mixup", "cutmix", "cutmixup", "cutout"]
+def apply_augment(fine, coarse):    
+    aug_methods = ["mixup", "cutmix", "cutmixup", "cutout", "blend",]
     idx = np.random.choice(len(aug_methods), p= None)
     aug = aug_methods[idx]
     prob_dict = {'blend': 1.0, 'mixup':1.0, 'cutout':1.0, 'cutmix': 1.0, 'cutmixup': 1.0}
@@ -23,12 +23,12 @@ def apply_augment(fine, coarse, last_c=None, last_f=None, flag=False):
         fine_aug, coarse_aug = fine.clone(), coarse.clone()
     elif aug == "blend":
         fine_aug, coarse_aug = blend(
-            fine.clone(), coarse.clone(), last_c, last_f, flag,
+            fine.clone(), coarse.clone(),
             prob=prob, alpha=alpha
         )
     elif aug == "mixup":
         fine_aug, coarse_aug, = mixup(
-            fine.clone(), coarse.clone(), last_c, last_f, flag,
+            fine.clone(), coarse.clone(),
             prob=prob, alpha=alpha,
         )
     elif aug == "cutout":
@@ -43,7 +43,7 @@ def apply_augment(fine, coarse, last_c=None, last_f=None, flag=False):
         )
     elif aug == "cutmixup":
         fine_aug, coarse_aug = cutmixup(
-            fine.clone(), coarse.clone(), last_c, last_f, flag, 
+            fine.clone(), coarse.clone(),
             mixup_prob=aux_prob, mixup_alpha=aux_alpha,
             cutmix_prob=prob, cutmix_alpha=alpha,
         )
@@ -53,7 +53,7 @@ def apply_augment(fine, coarse, last_c=None, last_f=None, flag=False):
     return fine_aug, coarse_aug, mask, aug
 
 
-def blend(fine, coarse, last_c, last_f, flag, prob=1.0, alpha=0.6):
+def blend(fine, coarse, prob=1.0, alpha=0.6):
     if alpha <= 0 or np.random.rand(1) >= prob:
         return fine, coarse
 
@@ -61,29 +61,22 @@ def blend(fine, coarse, last_c, last_f, flag, prob=1.0, alpha=0.6):
     rcoarse = c.repeat((1, 1, coarse.size(2), coarse.size(3)))
     rfine = c.repeat((1, 1, fine.size(2), fine.size(3)))
     v = np.random.uniform(alpha, 1)
-    if flag:
-        fine = v * fine + (1-v) * last_f
-        coarse = v * coarse + (1-v) * last_c
-    else:
-        fine = v * fine + (1-v) * rfine
-        coarse = v * coarse + (1-v) * rcoarse
+
+    fine = v * fine + (1-v) * rfine
+    coarse = v * coarse + (1-v) * rcoarse
 
     return fine, coarse
 
 
-def mixup(fine, coarse, last_c, last_f, flag, prob=1.0, alpha=1.2):
+def mixup(fine, coarse, prob=1.0, alpha=1.2):
     if alpha <= 0 or np.random.rand(1) >= prob:
         return fine, coarse
 
     v = np.random.beta(alpha, alpha)
     r_index = torch.randperm(fine.size(0)).to(coarse.device)
 
-    if flag:
-        fine = v * fine + (1-v) * last_f
-        coarse = v * coarse + (1-v) * last_c
-    else:
-        fine = v * fine + (1-v) * fine[r_index, :]
-        coarse = v * coarse + (1-v) * coarse[r_index, :]
+    fine = v * fine + (1-v) * fine[r_index, :]
+    coarse = v * coarse + (1-v) * coarse[r_index, :]
     return fine, coarse
 
 
@@ -125,11 +118,9 @@ def cutmix(fine, coarse, prob=1.0, alpha=1.0):
     return fine, coarse
 
 
-def cutmixup(
-    fine, coarse, last_c, last_f, flag,
+def cutmixup(fine, coarse,
     mixup_prob=1.0, mixup_alpha=1.0,
-    cutmix_prob=1.0, cutmix_alpha=1.0
-):
+    cutmix_prob=1.0, cutmix_alpha=1.0):
     c = _cutmix(coarse, cutmix_prob, cutmix_alpha)
     if c is None:
         return fine, coarse
@@ -147,12 +138,8 @@ def cutmixup(
         fine_aug = fine[rindex, :]
 
     else:
-        if flag:
-            coarse_aug = v * coarse + (1-v) * last_c
-            fine_aug = v * fine + (1-v) * last_f
-        else:
-            coarse_aug = v * coarse + (1-v) * coarse[rindex, :]
-            fine_aug = v * fine + (1-v) * fine[rindex, :]
+        coarse_aug = v * coarse + (1-v) * coarse[rindex, :]
+        fine_aug = v * fine + (1-v) * fine[rindex, :]
     # apply mixup to inside or outside
     if np.random.random() > 0.5:
         coarse[..., tcy:tcy+ch, tcx:tcx+cw] = coarse_aug[..., fcy:fcy+ch, fcx:fcx+cw]

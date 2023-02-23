@@ -1,3 +1,6 @@
+import os
+device = '0'
+os.environ["CUDA_VISIBLE_DEVICES"] = device
 import time
 import torch
 import torch.nn.functional as F
@@ -12,14 +15,11 @@ from model.DeepLGR import DeepLGR
 from model.UrbanODE import UrbanODE
 from model.FODE import FODE
 import numpy as np
-import os
 
 args = get_args()
 if args.model == 'UrbanPy':
     UrbanPy_single_task_train()
 else:
-    device = '0'
-    os.environ["CUDA_VISIBLE_DEVICES"] = device
     save_path = 'experiments/single-task/{}-{}-{}'.format(
                                                     args.model, 
                                                     args.dataset,
@@ -43,7 +43,7 @@ else:
             model = CUFAR(height=args.height, width=args.width, use_exf=args.use_exf,
                         scale_factor=args.scale_factor, channels=args.n_channels, 
                         sub_region= args.sub_region, 
-                        scaler_X=args.scaler_X, scaler_Y=args.scaler_Y)
+                        scaler_X=args.scaler_X, scaler_Y=args.scaler_Y, args= args)
         elif args.model == 'UrbanFM':
             model = UrbanFM(in_channels=1, out_channels=1, n_residual_blocks=16,
                         base_channels= args.n_channels, img_width= args.width, 
@@ -146,7 +146,9 @@ else:
             log = ('Task:{}|Epoch:{}|Loss:{:.3f}|Val_MSE\t{:.3f}|Time_Cost:{:.2f}|Best_Epoch:{}|lr:{}'.format( 
                         task, epoch, train_loss, 
                         total_mses[train_sequence[task_id -1]][-1],
-                        time.time() - epoch_start_time, best_epoch[task], get_learning_rate(optimizer)))
+                        time.time() - epoch_start_time, 
+                        best_epoch[task], 
+                        get_learning_rate(optimizer)))
             print(log)
             f = open('{}/train_process.txt'.format(save_path), 'a')
             f.write(log+'\n')
@@ -169,6 +171,7 @@ else:
         log = ('{} test: MSE={:.6f}, MAE={:.6f}, MAPE={:.6f}'.format(task, mse, mae, mape))
         f = open('{}/test_results.txt'.format(save_path), 'a')
         f.write(log+'\n')
+        f.close()
         print(log)
         print('*' * 64)
 

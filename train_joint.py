@@ -1,3 +1,6 @@
+import os
+device = '0'
+os.environ["CUDA_VISIBLE_DEVICES"] = device
 import time
 import torch
 import torch.nn.functional as F
@@ -11,12 +14,8 @@ from model.CUFAR import CUFAR
 from model.FODE import FODE
 from model.modules.ODE import *
 import numpy as np
-import os
 
 args = get_args()
-
-device = '0'
-os.environ["CUDA_VISIBLE_DEVICES"] = device
 
 save_path = 'experiments/joint/{}-{}-{}'.format(
                                             args.model,
@@ -41,7 +40,7 @@ def choose_model():
         model = CUFAR(height=args.height, width=args.width, use_exf=args.use_exf,
                     scale_factor=args.scale_factor, channels=args.n_channels, 
                     sub_region= args.sub_region, 
-                    scaler_X=args.scaler_X, scaler_Y=args.scaler_Y)
+                    scaler_X=args.scaler_X, scaler_Y=args.scaler_Y, args= args)
     elif args.model == 'UrbanFM':
         model = UrbanFM(in_channels=1, out_channels=1, n_residual_blocks=16,
                     base_channels= args.n_channels, img_width= args.width, 
