@@ -13,16 +13,13 @@ from src.args import get_args
 
 
 def UrbanPy_single_task_train():
-    device = '0'
-    os.environ["CUDA_VISIBLE_DEVICES"] = device
 
     urbanpy_args = get_args()
 
     torch.manual_seed(urbanpy_args.seed)
     warnings.filterwarnings('ignore')
-    save_path = 'experiments/single-task/UrbanPy-{}'.format(urbanpy_args.dataset)
+    save_path = 'experiments/single-task/{}-UrbanPy'.format(urbanpy_args.dataset)
     print("mk dir {}".format(save_path))
-    print('device:',device)
     os.makedirs(save_path, exist_ok=True)
 
     # test CUDA
@@ -53,7 +50,7 @@ def UrbanPy_single_task_train():
         model = model.cuda()
         return model
 
-    total_datapath = 'dataset'
+    total_datapath = 'datasets'
     train_sequence = ["P1", "P2", "P3", "P4"]
     total_mses = {"P1":[np.inf], "P2":[np.inf], "P3":[np.inf], "P4":[np.inf]}
     best_epoch = {"P1":0, "P2":0, "P3":0, "P4":0}

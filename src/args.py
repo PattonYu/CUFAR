@@ -27,16 +27,18 @@ def get_args():
     parser.add_argument('--scale_factor', type=int, default=4,
                         help='upscaling factor')
     parser.add_argument('--model', type=str, default='CUFAR',
-                        help='chose model to use', 
-                        choices=['UrbanFM', 'FODE', 'UrbanODE', 'DeepLGR', 'UrbanPy', 'CUFAR'])
+                        help='chose model to use', )
+                        # choices=['UrbanFM', 'FODE', 'UrbanODE', 'DeepLGR', 'UrbanPy', 'CUFAR'])
     parser.add_argument('--scaler_X', type=int, default=1,
                         help='scaler of coarse-grained flows')
     parser.add_argument('--scaler_Y', type=int, default=1,
                         help='scaler of fine-grained flows')
-    parser.add_argument('--c_map_shape', type= int, default= 32)
-    parser.add_argument('--f_map_shape', type= int, default= 128)
+    parser.add_argument('--c_map_shape', type= int, default= 32,
+                        choices=[16, 32])
+    parser.add_argument('--f_map_shape', type= int, default= 128,
+                        choices=[64, 128])
     parser.add_argument('--ext_shape', type= int, default= 7)
-    parser.add_argument('--dataset', type=str, default='TaxiBJ',
+    parser.add_argument('--dataset', type=str, default='TaxiBJ', choices= ['TaxiBJ', 'TaxiNYC'],
                         help='dataset name')
     parser.add_argument('--sub_region', type= int, default=4,
                         help= 'sub regions number H\' and W\' in the paper')
@@ -48,7 +50,6 @@ def get_args():
                         help='number of tasks')
     parser.add_argument('--minibatch_size', type= int, default= 2,
                         help='size of the sub-memory buffer M_sub')
-    
     
     ## UrbanPy parameters
 
@@ -74,9 +75,19 @@ def get_args():
                         help='save differences'),
 
     opt = parser.parse_args()
-    
-    opt.scaler_dict = {32:1, 64:1, 128:1}
-
+    if opt.dataset == 'TaxiNYC':
+        opt.width, opt.height = 16, 16
+        opt.scaler_dict = {16:1, 32:1, 64:1}
+        opt.from_reso = 16
+        opt.to_reso = 64
+    elif opt.dataset == 'TaxiBJ':
+        opt.width, opt.height = 32, 32
+        opt.scaler_dict = {32:1, 64:1, 128:1}
+        opt.from_reso = 32
+        opt.to_reso = 128
+    opt.c_map_shape = opt.width
+    opt.f_map_shape = opt.width * opt.scale_factor
+                    # {32:1500, 64:300, 128:100}
     opt.n_residuals = [int(_) for _ in opt.n_residuals.split(',')]
     opt.loss_weights = [float(_) for _ in opt.loss_weights.split(',')]
     opt.N = int(np.log(opt.to_reso / opt.from_reso)/np.log(2))

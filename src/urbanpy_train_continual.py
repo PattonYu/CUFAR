@@ -16,17 +16,14 @@ from src.args import get_args
 from model.modules.memory_buffer_urbanpy import Buffer
 
 def UrbanPy_continual_train():
-    device = '0'
-    os.environ["CUDA_VISIBLE_DEVICES"] = device
     urbanpy_args = get_args()
     urbanpy_args.model = 'UrbanPy'
     urbanpy_args.use_exf = True
-    save_path = 'experiments/continual/UrbanPy-{}'.format(urbanpy_args.dataset)
+    save_path = 'experiments/continual/{}-UrbanPy'.format(urbanpy_args.dataset)
 
     torch.manual_seed(urbanpy_args.seed)
     warnings.filterwarnings('ignore')
     print("mk dir {}".format(save_path))
-    print('device:', device)
     os.makedirs(save_path, exist_ok=True)
 
     cuda = True if torch.cuda.is_available() else False
@@ -40,7 +37,7 @@ def UrbanPy_continual_train():
         return lr[-1]
 
     def load_init_model():
-        load_path = 'experiments/single-task/UrbanPy-TaxiBJ/best_epoch_P1.pt'
+        load_path = 'experiments/single-task/{}-UrbanPy/best_epoch_P1.pt'.format(urbanpy_args.dataset)
         print("load from {}".format(load_path))
         model_state_dict = torch.load(load_path)["model_state_dict"]
 
@@ -85,7 +82,7 @@ def UrbanPy_continual_train():
             model = model.cuda()
         return model
 
-    total_datapath = 'dataset'
+    total_datapath = 'datasets'
     train_sequence = ["P1", "P2", "P3", "P4"]
     total_mses = {"P1":[np.inf], "P2":[np.inf], "P3":[np.inf], "P4":[np.inf]}
     best_epoch = {"P1":0, "P2":0, "P3":0, "P4":0}
